@@ -1,12 +1,13 @@
 import { Article, Section } from "@prisma/client";
-import { GetStaticProps } from "next";
-import { Fragment, useState } from "react";
+import { GetServerSideProps, GetStaticProps } from "next";
+import { Fragment, useEffect, useState } from "react";
 import { AiOutlineArrowDown, AiOutlineDown } from "react-icons/ai";
 import { MdModeEditOutline, MdOutlineGpsFixed } from "react-icons/md";
-import prisma from "../../lib/prisma";
-import cutAndGrpLns from "../utils/cutAndGrpLns";
+import prisma from "../../../lib/prisma";
+import cutAndGrpLns from "../../utils/cutAndGrpLns";
 import { useInView } from "react-intersection-observer";
 import { motion } from "framer-motion";
+import { useRouter } from "next/router";
 
 type Props = {
   article: Article & { sections: Section[] };
@@ -15,6 +16,18 @@ type Props = {
 export default function Home({ article }: Props) {
   const [currentSectionIdx, setCurrentSectionIdx] = useState(0);
   const { ref, inView } = useInView();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (Object.keys(article).length === 0) {
+      router.replace("/");
+    }
+  }, [article, router]);
+
+  if (Object.keys(article).length === 0) {
+    return null;
+  }
+
   return (
     <div className="relative">
       <img
@@ -30,7 +43,7 @@ export default function Home({ article }: Props) {
         <span className="text-xs px-10 w-96 mb-4">{article.about}</span>
         <div className="flex px-10">
           <a
-            href={`#${article.sections[0].id}`}
+            href="#content"
             className="bg-green-500 text-white flex items-center text-xs p-2 mr-2 rounded-md"
           >
             <AiOutlineArrowDown className="mr-1" /> Article
@@ -43,13 +56,12 @@ export default function Home({ article }: Props) {
           </a>
         </div>
       </div>
-      <div className="flex p-10 font-mono">
+      <div className="flex p-10 font-mono" id="content">
         <div className="w-1/4" />
         <motion.div
           className="flex flex-col items-end w-1/4 pr-20 fixed top-20"
           animate={{
             opacity: inView ? 0 : 1,
-            y: inView ? -20 : 0,
           }}
         >
           {article.sections.map((s, idx) => (
@@ -82,7 +94,7 @@ export default function Home({ article }: Props) {
                 >
                   <div
                     className={`w-[2px] h-20 bg-gray-500 ${
-                      idx < currentSectionIdx ? "bg-gray-300" : ""
+                      idx < currentSectionIdx ? "bg-gray-400" : ""
                     }`}
                   />
                   <AiOutlineDown />
@@ -93,32 +105,29 @@ export default function Home({ article }: Props) {
         </motion.div>
         <div className="w-3/4">
           {article.sections.map((s, idx) => (
-            <Fragment key={s.id}>
-              <div className="pb-8" id={s.id} />
-              <div className="flex flex-col mb-8">
-                <span className="font-bold text-xl mb-2 flex items-center">
-                  <MdOutlineGpsFixed
-                    className={`mr-2 text-sm ${
-                      idx < currentSectionIdx
-                        ? "text-green-600"
-                        : currentSectionIdx === idx
-                        ? "text-red-600"
-                        : ""
-                    }`}
-                  />{" "}
-                  {s.head}
-                </span>
-                <span className="whitespace-pre-wrap">
-                  {cutAndGrpLns(s.body).map((p, i) => (
-                    <Fragment key={`para-${s.id}-${i}`}>
-                      {p}
-                      <br />
-                      <br />
-                    </Fragment>
-                  ))}
-                </span>
-              </div>
-            </Fragment>
+            <div key={s.id} id={s.id} className="flex flex-col mb-8">
+              <span className="font-bold text-xl mb-2 flex items-center">
+                <MdOutlineGpsFixed
+                  className={`mr-2 text-sm ${
+                    idx < currentSectionIdx
+                      ? "text-green-600"
+                      : currentSectionIdx === idx
+                      ? "text-red-600"
+                      : ""
+                  }`}
+                />{" "}
+                {s.head}
+              </span>
+              <span className="whitespace-pre-wrap">
+                {cutAndGrpLns(s.body).map((p, i) => (
+                  <Fragment key={`para-${s.id}-${i}`}>
+                    {p}
+                    <br />
+                    <br />
+                  </Fragment>
+                ))}
+              </span>
+            </div>
           ))}
         </div>
       </div>
@@ -126,21 +135,20 @@ export default function Home({ article }: Props) {
   );
 }
 
-export const getStaticProps: GetStaticProps = async () => {
-  const article = await prisma.article.findUnique({
-    where: { id: "clhniqiwh0000qkgd3wp8y32r" },
-    include: {
-      sections: {
-        orderBy: {
-          createdAt: "asc",
-        },
+export const getServerSideProps: GetServerSideProps = async (ctx) => {
+  const articleId = ctx.params?.id;
+  let article: (Article & { sections: Section[] }) | null = null;
+  if (articleId) {
+    article = await prisma.article.findUnique({
+      where: { id: articleId as string },
+      include: {
+        sections: { orderBy: { createdAt: "asc" } },
       },
-    },
-  });
-
+    });
+  }
   return {
     props: {
-      article: JSON.parse(JSON.stringify(article)),
+      article: article ? JSON.parse(JSON.stringify(article)) : {},
     },
   };
 };

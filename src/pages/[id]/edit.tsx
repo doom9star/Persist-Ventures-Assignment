@@ -1,11 +1,13 @@
 import { Article, Section } from "@prisma/client";
 import { GetServerSideProps } from "next";
-import { ChangeEvent, useCallback, useState } from "react";
+import { ChangeEvent, useCallback, useEffect, useState } from "react";
 import { AiOutlineMinus } from "react-icons/ai";
 import { FaArrowLeft, FaPaperPlane } from "react-icons/fa";
-import { MdAdd } from "react-icons/md";
+import { MdAdd, MdArrowDownward, MdArrowUpward } from "react-icons/md";
 import prisma from "../../../lib/prisma";
 import { useRouter } from "next/router";
+import { nanoid } from "nanoid";
+import { motion } from "framer-motion";
 
 type Props = {
   article: Article & { sections: Section[] };
@@ -19,6 +21,8 @@ export default function Edit({ article }: Props) {
     about: article.about,
     sections: article.sections,
   });
+  const [addSectionID, setAddSectionID] = useState<string | null>(null);
+  const [publishing, setPublishing] = useState(false);
 
   const router = useRouter();
 
@@ -37,6 +41,68 @@ export default function Edit({ article }: Props) {
     },
     []
   );
+
+  const addNewSection = useCallback(
+    (where: "before" | "after") => {
+      const section = {
+        id: nanoid(),
+        head: "",
+        body: "",
+        createdAt: new Date(),
+        articleId: article.id,
+      };
+      const sidx = info.sections.findIndex((s) => s.id === addSectionID);
+      let sections: Section[] = [];
+
+      if (where === "before") {
+        sections = [
+          ...info.sections.slice(0, sidx),
+          section,
+          ...info.sections.slice(sidx),
+        ];
+      } else {
+        sections = [
+          ...info.sections.slice(0, sidx + 1),
+          section,
+          ...info.sections.slice(sidx + 1),
+        ];
+      }
+
+      setInfo({ ...info, sections });
+      setAddSectionID(null);
+    },
+    [info, article, addSectionID]
+  );
+
+  const publishArticle = useCallback(() => {
+    setPublishing(true);
+    fetch("/api/publish", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(info),
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.status === "success") {
+          router.replace(`/${data.articleId}`);
+        }
+      })
+      .finally(() => {
+        setPublishing(false);
+      });
+  }, [info]);
+
+  useEffect(() => {
+    if (Object.keys(article).length === 0) {
+      router.replace("/");
+    }
+  }, [article, router]);
+
+  if (Object.keys(article).length === 0) {
+    return null;
+  }
 
   return (
     <div className="flex justify-center mt-20">
@@ -65,9 +131,10 @@ export default function Edit({ article }: Props) {
           spellCheck={false}
           onChange={onChange}
         ></textarea>
-        <div className="m-8">
-          {article.sections.map((s) => (
-            <div key={s.id} className="flex mb-8">
+        <div className="my-8">
+          {info.sections.map((s, i) => (
+            <div key={s.id} className="flex mb-8 items-center">
+              <span className="mx-2">{i + 1}.</span>
               <div className="flex flex-col w-[95%]">
                 <input
                   className="border outline-none m-2 p-2 text-xs"
@@ -87,29 +154,69 @@ export default function Edit({ article }: Props) {
                   onChange={onChange}
                 ></textarea>
               </div>
-              <div className="flex flex-col m-2">
-                <a
-                  href={`#`}
-                  className="bg-green-500 text-white text-xs p-2 mb-1 rounded-md"
-                >
-                  <MdAdd />
-                </a>
-                <a
-                  href={`#`}
-                  className="bg-red-500 text-white text-xs p-2 rounded-md"
+              <div className="flex flex-col mx-2">
+                <div className="relative">
+                  <button
+                    className="bg-green-500 text-white text-xs p-2 mb-1 rounded-md"
+                    onClick={() =>
+                      setAddSectionID(addSectionID === s.id ? null : s.id)
+                    }
+                  >
+                    <MdAdd />
+                  </button>
+                  {addSectionID === s.id && (
+                    <motion.div
+                      className="absolute bg-white border whitespace-nowrap rounded-md"
+                      initial={{ opacity: 0, y: -20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      style={{ fontSize: "0.6rem" }}
+                    >
+                      <span
+                        className="flex items-center p-2 hover:bg-gray-100 cursor-pointer"
+                        onClick={() => addNewSection("before")}
+                      >
+                        <MdArrowUpward />
+                        &nbsp;Insert Above
+                      </span>
+                      <span
+                        className="flex items-center p-2 hover:bg-gray-100 cursor-pointer"
+                        onClick={() => addNewSection("after")}
+                      >
+                        <MdArrowDownward />
+                        &nbsp;Insert Below
+                      </span>
+                    </motion.div>
+                  )}
+                </div>
+                <button
+                  className={`bg-red-500 text-white text-xs p-2 rounded-md ${
+                    info.sections.length === 1 ? "opacity-50" : ""
+                  }`}
+                  disabled={info.sections.length === 1}
+                  onClick={() =>
+                    setInfo({
+                      ...info,
+                      sections: info.sections.filter((_s) => _s.id !== s.id),
+                    })
+                  }
                 >
                   <AiOutlineMinus />
-                </a>
+                </button>
               </div>
             </div>
           ))}
         </div>
-        <a
-          href={`#`}
-          className="bg-green-500 text-white mb-20 mx-auto w-20 flex items-center text-xs p-2 rounded-md"
+        <button
+          className={`bg-green-500 relative text-white mb-20 mx-auto flex items-center text-xs p-2 rounded-md ${
+            publishing ? "bg-green-400" : ""
+          }`}
+          onClick={publishArticle}
         >
+          {publishing && (
+            <div className="w-5 h-5 border-2 border-t-0 left-9 rounded-full border-white absolute animate-spin" />
+          )}
           <FaPaperPlane className="mr-2" /> Publish
-        </a>
+        </button>
       </div>
     </div>
   );
@@ -122,7 +229,7 @@ export const getServerSideProps: GetServerSideProps = async (ctx) => {
     article = await prisma.article.findUnique({
       where: { id: articleId as string },
       include: {
-        sections: true,
+        sections: { orderBy: { createdAt: "asc" } },
       },
     });
   }
