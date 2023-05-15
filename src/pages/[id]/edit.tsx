@@ -92,7 +92,7 @@ export default function Edit({ article }: Props) {
       .finally(() => {
         setPublishing(false);
       });
-  }, [info]);
+  }, [info, router]);
 
   useEffect(() => {
     if (Object.keys(article).length === 0) {

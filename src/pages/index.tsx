@@ -7,6 +7,7 @@ import prisma from "../../lib/prisma";
 import cutAndGrpLns from "../utils/cutAndGrpLns";
 import { useInView } from "react-intersection-observer";
 import { motion } from "framer-motion";
+import Image from "next/image";
 
 type Props = {
   article: Article & { sections: Section[] };
@@ -17,12 +18,15 @@ export default function Home({ article }: Props) {
   const { ref, inView } = useInView();
   return (
     <div className="relative">
-      <img
-        className="w-[100vw] h-[100vh] object-cover"
-        src="/earth.jpg"
-        alt="Earth"
-        ref={ref}
-      />
+      <div className="w-[100vw] h-[100vh] relative">
+        <Image
+          src="/earth.jpg"
+          alt="Earth"
+          ref={ref}
+          fill={true}
+          className="object-cover"
+        />
+      </div>
       <div className="absolute w-[100vw] h-[100vh] top-0 flex flex-col justify-center p-10 items-start font-bold text-gray-300 text-5xl font-mono">
         <div className="flex items-center mb-2 px-10">
           <span>{article.title}</span>
@@ -47,6 +51,7 @@ export default function Home({ article }: Props) {
         <div className="w-1/4" />
         <motion.div
           className="flex flex-col items-end w-1/4 pr-20 fixed top-20"
+          initial={{ opacity: 0 }}
           animate={{
             opacity: inView ? 0 : 1,
             y: inView ? -20 : 0,
