@@ -1,13 +1,16 @@
 import { Article, Section } from "@prisma/client";
+import { motion } from "framer-motion";
+import { nanoid } from "nanoid";
 import { GetServerSideProps } from "next";
+import { Quicksand } from "next/font/google";
+import { useRouter } from "next/router";
 import { ChangeEvent, useCallback, useEffect, useState } from "react";
 import { AiOutlineMinus } from "react-icons/ai";
 import { FaArrowLeft, FaPaperPlane } from "react-icons/fa";
 import { MdAdd, MdArrowDownward, MdArrowUpward } from "react-icons/md";
 import prisma from "../../../lib/prisma";
-import { useRouter } from "next/router";
-import { nanoid } from "nanoid";
-import { motion } from "framer-motion";
+
+const quicksand = Quicksand({ subsets: ["latin"] });
 
 type Props = {
   article: Article & { sections: Section[] };
@@ -108,12 +111,12 @@ export default function Edit({ article }: Props) {
     <div className="flex justify-center mt-20">
       <a
         href="#"
-        className="mx-10 text-lg text-gray-600"
+        className="mx-10 text-sm text-gray-600"
         onClick={() => router.back()}
       >
         <FaArrowLeft />
       </a>
-      <div className="flex flex-col mt-10 w-1/2 font-mono">
+      <div className={`flex flex-col mt-10 w-1/2 ${quicksand.className}`}>
         <input
           className="border outline-none m-2 p-2 text-xs"
           name="title"
@@ -207,7 +210,7 @@ export default function Edit({ article }: Props) {
           ))}
         </div>
         <button
-          className={`bg-green-500 relative text-white mb-20 mx-auto flex items-center text-xs p-2 rounded-md ${
+          className={`bg-green-500 relative text-white mb-20 mx-auto flex items-center text-xs p-2 rounded-md font-bold ${
             publishing ? "bg-green-400" : ""
           }`}
           onClick={publishArticle}

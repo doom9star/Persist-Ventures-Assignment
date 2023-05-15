@@ -1,13 +1,18 @@
 import { Article, Section } from "@prisma/client";
 import { motion } from "framer-motion";
 import { GetServerSideProps } from "next";
+import { Anton, Lilita_One, Nunito_Sans } from "next/font/google";
+import Image from "next/image";
 import { Fragment, useState } from "react";
 import { AiOutlineArrowDown, AiOutlineDown } from "react-icons/ai";
 import { MdModeEditOutline, MdOutlineGpsFixed } from "react-icons/md";
 import { useInView } from "react-intersection-observer";
 import prisma from "../../../lib/prisma";
 import cutAndGrpLns from "../../utils/cutAndGrpLns";
-import Image from "next/image";
+
+const nunito = Nunito_Sans({ subsets: ["latin"] });
+const lilita = Lilita_One({ subsets: ["latin"], weight: "400" });
+const anton = Anton({ subsets: ["latin"], weight: "400" });
 
 type Props = {
   article: Article & { sections: Section[] };
@@ -18,19 +23,23 @@ export default function Home({ article }: Props) {
   const { ref, inView } = useInView();
   return (
     <div className="relative">
-      <Image
-        src="/earth.jpg"
-        alt="Earth"
-        ref={ref}
-        fill={true}
-        className="object-cover"
-      />
-      <div className="absolute w-[100vw] h-[100vh] top-0 flex flex-col justify-center p-10 items-start font-bold text-gray-300 text-5xl font-mono">
+      <div className="w-[100vw] h-[100vh] relative">
+        <Image
+          src="/earth.jpg"
+          alt="Earth"
+          ref={ref}
+          fill={true}
+          className="object-cover"
+        />
+      </div>
+      <div className="absolute w-[100vw] h-[100vh] top-0 flex flex-col justify-center p-10 items-start font-bold text-gray-300 text-5xl">
         <div className="flex items-center mb-2 px-10">
-          <span>{article.title}</span>
+          <span className={anton.className}>{article.title}</span>
         </div>
-        <span className="text-xs px-10 w-96 mb-4">{article.about}</span>
-        <div className="flex px-10">
+        <span className={`text-xs px-10 w-96 mb-4 ${nunito.className}`}>
+          {article.about}
+        </span>
+        <div className={`flex px-10 ${nunito.className}`}>
           <a
             href={`#${article.sections[0].id}`}
             className="bg-green-500 text-white flex items-center text-xs p-2 mr-2 rounded-md"
@@ -45,7 +54,7 @@ export default function Home({ article }: Props) {
           </a>
         </div>
       </div>
-      <div className="flex p-10 font-mono">
+      <div className={`flex p-10 ${nunito.className}`}>
         <div className="w-1/4" />
         <motion.div
           className="flex flex-col items-end w-1/4 pr-20 fixed top-20"
@@ -85,7 +94,7 @@ export default function Home({ article }: Props) {
                 >
                   <div
                     className={`w-[2px] h-20 bg-gray-500 ${
-                      idx < currentSectionIdx ? "bg-gray-300" : ""
+                      idx < currentSectionIdx ? "bg-gray-200" : ""
                     }`}
                   />
                   <AiOutlineDown />
@@ -98,8 +107,10 @@ export default function Home({ article }: Props) {
           {article.sections.map((s, idx) => (
             <Fragment key={s.id}>
               <div className="pb-8" id={s.id} />
-              <div className="flex flex-col mb-8">
-                <span className="font-bold text-xl mb-2 flex items-center">
+              <div className={`flex flex-col mb-8`}>
+                <span
+                  className={`font-bold text-xl mb-2 flex items-center text-gray-700 ${lilita.className}`}
+                >
                   <MdOutlineGpsFixed
                     className={`mr-2 text-sm ${
                       idx < currentSectionIdx
@@ -128,7 +139,6 @@ export default function Home({ article }: Props) {
     </div>
   );
 }
-
 export const getServerSideProps: GetServerSideProps = async (ctx) => {
   const articleId = ctx.params?.id;
   let article: (Article & { sections: Section[] }) | null = null;
